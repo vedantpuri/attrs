@@ -3,16 +3,16 @@ Changelog
 
 Versions follow `CalVer <https://calver.org>`_ with a strict backwards-compatibility policy.
 
-The **first digit** of the version is the year.
-The **second digit** is incremented with each release, starting at 1 for each year.
-The **third digit** is when we need to start branches for older releases (only for emergencies).
+The **first number** of the version is the year.
+The **second number** is incremented with each release, starting at 1 for each year.
+The **third number** is when we need to start branches for older releases (only for emergencies).
 
 Put simply, you shouldn't ever be afraid to upgrade ``attrs`` if you're only using its public APIs.
 Whenever there is a need to break compatibility, it is announced here in the changelog, and raises a ``DeprecationWarning`` for a year (if possible) before it's finally really broken.
 
 .. warning::
 
-   The structure of the `attr.Attribute` class is exempt from this rule.
+   The structure of the `attrs.Attribute` class is exempt from this rule.
    It *will* change in the future, but since it should be considered read-only, that shouldn't matter.
 
    However if you intend to build extensions on top of ``attrs`` you have to anticipate that.
@@ -27,6 +27,91 @@ Changes for the upcoming release can be found in the `"changelog.d" directory <h
    See https://github.com/python-attrs/attrs/blob/main/.github/CONTRIBUTING.md#changelog for details.
 
 .. towncrier release notes start
+
+21.4.0 (2021-12-29)
+-------------------
+
+Changes
+^^^^^^^
+
+- Fixed the test suite on PyPy3.8 where ``cloudpickle`` does not work.
+  `#892 <https://github.com/python-attrs/attrs/issues/892>`_
+- Fixed ``coverage report`` for projects that use ``attrs`` and don't set a ``--source``.
+  `#895 <https://github.com/python-attrs/attrs/issues/895>`_,
+  `#896 <https://github.com/python-attrs/attrs/issues/896>`_
+
+
+----
+
+
+21.3.0 (2021-12-28)
+-------------------
+
+Backward-incompatible Changes
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- When using ``@define``, converters are now run by default when setting an attribute on an instance -- additionally to validators.
+  I.e. the new default is ``on_setattr=[attrs.setters.convert, attrs.setters.validate]``.
+
+  This is unfortunately a breaking change, but it was an oversight, impossible to raise a ``DeprecationWarning`` about, and it's better to fix it now while the APIs are very fresh with few users.
+  `#835 <https://github.com/python-attrs/attrs/issues/835>`_,
+  `#886 <https://github.com/python-attrs/attrs/issues/886>`_
+- ``import attrs`` has finally landed!
+  As of this release, you can finally import ``attrs`` using its proper name.
+
+  Not all names from the ``attr`` namespace have been transferred; most notably ``attr.s`` and ``attr.ib`` are missing.
+  See ``attrs.define`` and ``attrs.field`` if you haven't seen our next-generation APIs yet.
+  A more elaborate explanation can be found `On The Core API Names <https://www.attrs.org/en/latest/names.html>`_
+
+  This feature is at least for one release **provisional**.
+  We don't *plan* on changing anything, but such a big change is unlikely to go perfectly on the first strike.
+
+  The API docs have been mostly updated, but it will be an ongoing effort to change everything to the new APIs.
+  Please note that we have **not** moved -- or even removed -- anything from ``attr``!
+
+  Please do report any bugs or documentation inconsistencies!
+  `#887 <https://github.com/python-attrs/attrs/issues/887>`_
+
+
+Changes
+^^^^^^^
+
+- ``attr.asdict(retain_collection_types=False)`` (default) dumps collection-esque keys as tuples.
+  `#646 <https://github.com/python-attrs/attrs/issues/646>`_,
+  `#888 <https://github.com/python-attrs/attrs/issues/888>`_
+- ``__match_args__`` are now generated to support Python 3.10's
+  `Structural Pattern Matching <https://docs.python.org/3.10/whatsnew/3.10.html#pep-634-structural-pattern-matching>`_.
+  This can be controlled by the ``match_args`` argument to the class decorators on Python 3.10 and later.
+  On older versions, it is never added and the argument is ignored.
+  `#815 <https://github.com/python-attrs/attrs/issues/815>`_
+- If the class-level *on_setattr* is set to ``attrs.setters.validate`` (default in ``@define`` and ``@mutable``) but no field defines a validator, pretend that it's not set.
+  `#817 <https://github.com/python-attrs/attrs/issues/817>`_
+- The generated ``__repr__`` is significantly faster on Pythons with f-strings.
+  `#819 <https://github.com/python-attrs/attrs/issues/819>`_
+- Attributes transformed via ``field_transformer`` are wrapped with ``AttrsClass`` again.
+  `#824 <https://github.com/python-attrs/attrs/issues/824>`_
+- Generated source code is now cached more efficiently for identical classes.
+  `#828 <https://github.com/python-attrs/attrs/issues/828>`_
+- Added ``attrs.converters.to_bool()``.
+  `#830 <https://github.com/python-attrs/attrs/issues/830>`_
+- ``attrs.resolve_types()`` now resolves types of subclasses after the parents are resolved.
+  `#842 <https://github.com/python-attrs/attrs/issues/842>`_
+  `#843 <https://github.com/python-attrs/attrs/issues/843>`_
+- Added new validators: ``lt(val)`` (< val), ``le(va)`` (≤ val), ``ge(val)`` (≥ val), ``gt(val)`` (> val), and ``maxlen(n)``.
+  `#845 <https://github.com/python-attrs/attrs/issues/845>`_
+- ``attrs`` classes are now fully compatible with `cloudpickle <https://github.com/cloudpipe/cloudpickle>`_ (no need to disable ``repr`` anymore).
+  `#857 <https://github.com/python-attrs/attrs/issues/857>`_
+- Added new context manager ``attrs.validators.disabled()`` and functions ``attrs.validators.(set|get)_disabled()``.
+  They deprecate ``attrs.(set|get)_run_validators()``.
+  All functions are interoperable and modify the same internal state.
+  They are not – and never were – thread-safe, though.
+  `#859 <https://github.com/python-attrs/attrs/issues/859>`_
+- ``attrs.validators.matches_re()`` now accepts pre-compiled regular expressions in addition to pattern strings.
+  `#877 <https://github.com/python-attrs/attrs/issues/877>`_
+
+
+----
+
 
 21.2.0 (2021-05-07)
 -------------------
@@ -76,7 +161,7 @@ Changes
 - It's now possible to customize the behavior of ``eq`` and ``order`` by passing in a callable.
   `#435 <https://github.com/python-attrs/attrs/issues/435>`_,
   `#627 <https://github.com/python-attrs/attrs/issues/627>`_
-- The instant favorite `next-generation APIs <https://www.attrs.org/en/stable/api.html#next-gen>`_ are not provisional anymore!
+- The instant favorite next-generation APIs are not provisional anymore!
 
   They are also officially supported by Mypy as of their `0.800 release <https://mypy-lang.blogspot.com/2021/01/mypy-0800-released.html>`_.
 
@@ -115,7 +200,7 @@ Changes
 
   See the `new docs on comparison <https://www.attrs.org/en/stable/comparison.html>`_ for more details.
   `#787 <https://github.com/python-attrs/attrs/issues/787>`_
-- Added **provisional** support for static typing in ``pyright`` via the `dataclass_transforms specification <https://github.com/microsoft/pyright/blob/master/specs/dataclass_transforms.md>`_.
+- Added **provisional** support for static typing in ``pyright`` via the `dataclass_transforms specification <https://github.com/microsoft/pyright/blob/main/specs/dataclass_transforms.md>`_.
   Both the ``pyright`` specification and ``attrs`` implementation may change in future versions of both projects.
 
   Your constructive feedback is welcome in both `attrs#795 <https://github.com/python-attrs/attrs/issues/795>`_ and `pyright#1782 <https://github.com/microsoft/pyright/discussions/1782>`_.
@@ -234,7 +319,7 @@ Deprecations
   Please check out the linked issue for more details.
 
   These new APIs have been added *provisionally* as part of #666 so you can try them out today and provide feedback.
-  Learn more in the `API docs <https://www.attrs.org/en/stable/api.html#provisional-apis>`_.
+  Learn more in the `API docs <https://www.attrs.org/en/stable/api.html>`_.
   `#408 <https://github.com/python-attrs/attrs/issues/408>`_
 
 
@@ -511,7 +596,7 @@ Changes
   `#349 <https://github.com/python-attrs/attrs/issues/349>`_
 - The order of attributes that are passed into ``attr.make_class()`` or the *these* argument of ``@attr.s()`` is now retained if the dictionary is ordered (i.e. ``dict`` on Python 3.6 and later, ``collections.OrderedDict`` otherwise).
 
-  Before, the order was always determined by the order in which the attributes have been defined which may not be desirable when creating classes programatically.
+  Before, the order was always determined by the order in which the attributes have been defined which may not be desirable when creating classes programmatically.
 
   `#300 <https://github.com/python-attrs/attrs/issues/300>`_,
   `#339 <https://github.com/python-attrs/attrs/issues/339>`_,
@@ -523,7 +608,7 @@ Changes
 - Setting the cell type is now completely best effort.
   This fixes ``attrs`` on Jython.
 
-  We cannot make any guarantees regarding Jython though, because our test suite cannot run due to dependency incompatabilities.
+  We cannot make any guarantees regarding Jython though, because our test suite cannot run due to dependency incompatibilities.
 
   `#321 <https://github.com/python-attrs/attrs/issues/321>`_,
   `#334 <https://github.com/python-attrs/attrs/issues/334>`_

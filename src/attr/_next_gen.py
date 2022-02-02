@@ -1,13 +1,16 @@
+# SPDX-License-Identifier: MIT
+
 """
 These are Python 3.6+-only and keyword-only APIs that call `attr.s` and
 `attr.ib` with different default values.
 """
 
+
 from functools import partial
 
-from attr.exceptions import UnannotatedAttributeError
-
 from . import setters
+from ._funcs import asdict as _asdict
+from ._funcs import astuple as _astuple
 from ._make import (
     NOTHING,
     _frozen_setattrs,
@@ -15,6 +18,7 @@ from ._make import (
     attrib,
     attrs,
 )
+from .exceptions import UnannotatedAttributeError
 
 
 def define(
@@ -43,19 +47,32 @@ def define(
     r"""
     Define an ``attrs`` class.
 
-    The behavioral differences to `attr.s` are the handling of the
-    *auto_attribs* option:
+    Differences to the classic `attr.s` that it uses underneath:
+
+    - Automatically detect whether or not *auto_attribs* should be `True`
+      (c.f. *auto_attribs* parameter).
+    - If *frozen* is `False`, run converters and validators when setting an
+      attribute by default.
+    - *slots=True* (see :term:`slotted classes` for potentially surprising
+      behaviors)
+    - *auto_exc=True*
+    - *auto_detect=True*
+    - *order=False*
+    - Some options that were only relevant on Python 2 or were kept around for
+      backwards-compatibility have been removed.
+
+    Please note that these are all defaults and you can change them as you
+    wish.
 
     :param Optional[bool] auto_attribs: If set to `True` or `False`, it behaves
        exactly like `attr.s`. If left `None`, `attr.s` will try to guess:
 
-       1. If any attributes are annotated and no unannotated `attr.ib`\ s
+       1. If any attributes are annotated and no unannotated `attrs.fields`\ s
           are found, it assumes *auto_attribs=True*.
        2. Otherwise it assumes *auto_attribs=False* and tries to collect
-          `attr.ib`\ s.
+          `attrs.fields`\ s.
 
-    and that mutable classes (``frozen=False``) convert and validate on
-    ``__setattr__``.
+    For now, please refer to `attr.s` for the rest of the parameters.
 
     .. versionadded:: 20.1.0
     .. versionchanged:: 21.3.0 Converters are also run ``on_setattr``.
@@ -167,4 +184,32 @@ def field(
         eq=eq,
         order=order,
         on_setattr=on_setattr,
+    )
+
+
+def asdict(inst, *, recurse=True, filter=None, value_serializer=None):
+    """
+    Same as `attr.asdict`, except that collections types are always retained
+    and dict is always used as *dict_factory*.
+
+    .. versionadded:: 21.3.0
+    """
+    return _asdict(
+        inst=inst,
+        recurse=recurse,
+        filter=filter,
+        value_serializer=value_serializer,
+        retain_collection_types=True,
+    )
+
+
+def astuple(inst, *, recurse=True, filter=None):
+    """
+    Same as `attr.astuple`, except that collections types are always retained
+    and `tuple` is always used as the *tuple_factory*.
+
+    .. versionadded:: 21.3.0
+    """
+    return _astuple(
+        inst=inst, recurse=recurse, filter=filter, retain_collection_types=True
     )

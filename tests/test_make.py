@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+
 """
 Tests for `attr._make`.
 """
@@ -233,7 +235,7 @@ class TestTransformAttrs(object):
         """
         Converts all attributes, including base class' attributes, if `kw_only`
         is provided. Therefore, `kw_only` allows attributes with defaults to
-        preceed mandatory attributes.
+        precede mandatory attributes.
 
         Updates in the subclass *don't* affect the base class attributes.
         """
@@ -308,7 +310,7 @@ class TestTransformAttrs(object):
 
     def test_multiple_inheritance_old(self):
         """
-        Old multiple inheritance attributre collection behavior is retained.
+        Old multiple inheritance attribute collection behavior is retained.
 
         See #285
         """
@@ -2054,6 +2056,27 @@ class TestAutoDetect:
                 return "hi"
 
         assert "hi" == repr(C(42))
+
+    @pytest.mark.parametrize("slots", [True, False])
+    @pytest.mark.parametrize("frozen", [True, False])
+    def test_hash_uses_eq(self, slots, frozen):
+        """
+        If eq is passed in, then __hash__ should use the eq callable
+        to generate the hash code.
+        """
+
+        @attr.s(slots=slots, frozen=frozen, hash=True)
+        class C(object):
+            x = attr.ib(eq=str)
+
+        @attr.s(slots=slots, frozen=frozen, hash=True)
+        class D(object):
+            x = attr.ib()
+
+        # These hashes should be the same because 1 is turned into
+        # string before hashing.
+        assert hash(C("1")) == hash(C(1))
+        assert hash(D("1")) != hash(D(1))
 
     @pytest.mark.parametrize("slots", [True, False])
     @pytest.mark.parametrize("frozen", [True, False])

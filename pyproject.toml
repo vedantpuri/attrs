@@ -6,13 +6,14 @@ build-backend = "setuptools.build_meta"
 [tool.coverage.run]
 parallel = true
 branch = true
-source = ["attr"]
+source = ["attr", "attrs"]
 
 [tool.coverage.paths]
 source = ["src", ".tox/*/site-packages"]
 
 [tool.coverage.report]
 show_missing = true
+skip_covered = true
 exclude_lines = [
     "pragma: no cover",
     # PyPy is unacceptably slow under coverage.
@@ -32,6 +33,10 @@ extend-exclude = '''
 verbose = 2
 fail-under = 100
 whitelist-regex = ["test_.*"]
+
+
+[tool.check-wheel-contents]
+toplevel = ["attr", "attrs"]
 
 
 [tool.isort]

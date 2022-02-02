@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+
 """
 Unit tests for slots-related functionality.
 """
@@ -488,7 +490,7 @@ class TestClosureCellRewriting(object):
     def test_code_hack_failure(self, monkeypatch):
         """
         Keeps working if function/code object introspection doesn't work
-        on this (nonstandard) interpeter.
+        on this (nonstandard) interpreter.
 
         A warning is emitted that points to the actual code.
         """
@@ -715,7 +717,7 @@ def test_slots_super_property_get():
 
 
 @pytest.mark.skipif(PY2, reason="shortcut super() is PY3-only.")
-def test_slots_super_property_get_shurtcut():
+def test_slots_super_property_get_shortcut():
     """
     On Python 3, the `super()` shortcut is allowed.
     """

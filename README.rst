@@ -32,13 +32,12 @@ For that, it gives you a class decorator and a way to declaratively define the a
 
 .. code-block:: pycon
 
-   >>> from typing import List
-   >>> from attr import asdict, define, make_class, Factory
+   >>> from attrs import asdict, define, make_class, Factory
 
    >>> @define
    ... class SomeClass:
    ...     a_number: int = 42
-   ...     list_of_numbers: List[int] = Factory(list)
+   ...     list_of_numbers: list[int] = Factory(list)
    ...
    ...     def hard_math(self, another_number):
    ...         return self.a_number + sum(self.list_of_numbers) * another_number
@@ -70,21 +69,21 @@ After *declaring* your attributes ``attrs`` gives you:
 
 - a concise and explicit overview of the class's attributes,
 - a nice human-readable ``__repr__``,
-- a complete set of comparison methods (equality and ordering),
+- equality-checking methods,
 - an initializer,
 - and much more,
 
 *without* writing dull boilerplate code again and again and *without* runtime performance penalties.
 
-This gives you the power to use actual classes with actual types in your code instead of confusing ``tuple``\ s or `confusingly behaving <https://www.attrs.org/en/stable/why.html#namedtuples>`_ ``namedtuple``\ s.
-Which in turn encourages you to write *small classes* that do `one thing well <https://www.destroyallsoftware.com/talks/boundaries>`_.
-Never again violate the `single responsibility principle <https://en.wikipedia.org/wiki/Single_responsibility_principle>`_ just because implementing ``__init__`` et al is a painful drag.
+**Hate type annotations**!?
+No problem!
+Types are entirely **optional** with ``attrs``.
+Simply assign ``attrs.field()`` to the attributes instead of annotating them with types.
 
 ----
 
-In case you're wondering: this example uses ``attrs``'s `modern APIs <https://www.attrs.org/en/stable/api.html#next-generation-apis>`_ that have been introduced in version 20.1.0.
-The classic APIs (``@attr.s``, ``attr.ib``, ``@attr.attrs``, ``attr.attrib``, and ``attr.dataclass``) will remain indefinitely.
-`Type annotations <https://www.attrs.org/en/latest/types.html>`_ will also stay entirely **optional** forever.
+This example uses ``attrs``'s modern APIs that have been introduced in version 20.1.0, and the ``attrs`` package import name that has been added in version 21.3.0.
+The classic APIs (``@attr.s``, ``attr.ib``, plus their serious business aliases) and the ``attr`` package import name will remain **indefinitely**.
 
 Please check out `On The Core API Names <https://www.attrs.org/en/latest/names.html>`_ for a more in-depth explanation.
 
@@ -92,8 +91,8 @@ Please check out `On The Core API Names <https://www.attrs.org/en/latest/names.h
 Data Classes
 ============
 
-On the tin, ``attrs`` might remind you of ``dataclasses`` (and indeed, ``dataclasses`` are a descendant of ``attrs``).
-In practice it does a lot more more and is more flexible.
+On the tin, ``attrs`` might remind you of ``dataclasses`` (and indeed, ``dataclasses`` `are a descendant <https://hynek.me/articles/import-attrs/>`_ of ``attrs``).
+In practice it does a lot more and is more flexible.
 For instance it allows you to define `special handling of NumPy arrays for equality checks <https://www.attrs.org/en/stable/comparison.html#customization>`_, or allows more ways to `plug into the initialization process <https://www.attrs.org/en/stable/init.html#hooking-yourself-into-initialization>`_.
 
 For more details, please refer to our `comparison page <https://www.attrs.org/en/stable/why.html#data-classes>`_.

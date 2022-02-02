@@ -19,6 +19,7 @@ If your pull request is a documentation fix or a trivial typo, feel free to dele
 - [ ] New features have been added to our [Hypothesis testing strategy](https://github.com/python-attrs/attrs/blob/main/tests/strategies.py).
 - [ ] Changes or additions to public APIs are reflected in our type stubs (files ending in ``.pyi``).
     - [ ] ...and used in the stub test file `tests/typing_example.py`.
+    - [ ] If they've been added to `attr/__init__.pyi`, they've *also* been re-imported in `attrs/__init__.pyi`.
 - [ ] Updated **documentation** for changed code.
     - [ ] New functions/classes have to be added to `docs/api.rst` by hand.
     - [ ] Changes to the signature of `@attr.s()` have to be added by hand too.
@@ -26,6 +27,7 @@ If your pull request is a documentation fix or a trivial typo, feel free to dele
           Find the appropriate next version in our [``__init__.py``](https://github.com/python-attrs/attrs/blob/main/src/attr/__init__.py) file.
 - [ ] Documentation in `.rst` files is written using [semantic newlines](https://rhodesmill.org/brandon/2012/one-sentence-per-line/).
 - [ ] Changes (and possible deprecations) have news fragments in [`changelog.d`](https://github.com/python-attrs/attrs/blob/main/changelog.d).
+- [ ] Consider granting [push permissions to the PR branch](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/working-with-forks/allowing-changes-to-a-pull-request-branch-created-from-a-fork), so maintainers can fix minor issues themselves without pestering you.
 
 <!--
 If you have *any* questions to *any* of the points above, just **submit and ask**!

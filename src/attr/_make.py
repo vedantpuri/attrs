@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+
 from __future__ import absolute_import, division, print_function
 
 import copy
@@ -147,11 +149,11 @@ def attrib(
         is used and no value is passed while instantiating or the attribute is
         excluded using ``init=False``.
 
-        If the value is an instance of `Factory`, its callable will be
+        If the value is an instance of `attrs.Factory`, its callable will be
         used to construct a new value (useful for mutable data types like lists
         or dicts).
 
-        If a default is not set (or set manually to `attr.NOTHING`), a value
+        If a default is not set (or set manually to `attrs.NOTHING`), a value
         *must* be supplied when instantiating; otherwise a `TypeError`
         will be raised.
 
@@ -164,7 +166,7 @@ def attrib(
 
     :param validator: `callable` that is called by ``attrs``-generated
         ``__init__`` methods after the instance has been initialized.  They
-        receive the initialized instance, the `Attribute`, and the
+        receive the initialized instance, the :func:`~attrs.Attribute`, and the
         passed value.
 
         The return value is *not* inspected so the validator has to throw an
@@ -237,10 +239,10 @@ def attrib(
         parameter is ignored).
     :param on_setattr: Allows to overwrite the *on_setattr* setting from
         `attr.s`. If left `None`, the *on_setattr* value from `attr.s` is used.
-        Set to `attr.setters.NO_OP` to run **no** `setattr` hooks for this
+        Set to `attrs.setters.NO_OP` to run **no** `setattr` hooks for this
         attribute -- regardless of the setting in `attr.s`.
     :type on_setattr: `callable`, or a list of callables, or `None`, or
-        `attr.setters.NO_OP`
+        `attrs.setters.NO_OP`
 
     .. versionadded:: 15.2.0 *convert*
     .. versionadded:: 16.3.0 *metadata*
@@ -323,13 +325,11 @@ def _compile_and_eval(script, globs, locs=None, filename=""):
     eval(bytecode, globs, locs)
 
 
-def _make_method(name, script, filename, globs=None):
+def _make_method(name, script, filename, globs):
     """
     Create the method with the script given and return the method object.
     """
     locs = {}
-    if globs is None:
-        globs = {}
 
     # In order of debuggers like PDB being able to step through the code,
     # we add a fake linecache entry.
@@ -805,7 +805,7 @@ class _ClassBuilder(object):
             cls.__attrs_own_setattr__ = False
 
             if not self._has_custom_setattr:
-                cls.__setattr__ = object.__setattr__
+                cls.__setattr__ = _obj_setattr
 
         return cls
 
@@ -833,7 +833,7 @@ class _ClassBuilder(object):
             if not self._has_custom_setattr:
                 for base_cls in self._cls.__bases__:
                     if base_cls.__dict__.get("__attrs_own_setattr__", False):
-                        cd["__setattr__"] = object.__setattr__
+                        cd["__setattr__"] = _obj_setattr
                         break
 
         # Traverse the MRO to collect existing slots
@@ -866,7 +866,7 @@ class _ClassBuilder(object):
         slot_names = [name for name in names if name not in base_names]
         # There are slots for attributes from current class
         # that are defined in parent classes.
-        # As their descriptors may be overriden by a child class,
+        # As their descriptors may be overridden by a child class,
         # we collect them here and update the class dict
         reused_slots = {
             slot: slot_descriptor
@@ -1286,7 +1286,7 @@ def attrs(
         *cmp*, or *hash* overrides whatever *auto_detect* would determine.
 
         *auto_detect* requires Python 3. Setting it ``True`` on Python 2 raises
-        a `PythonTooOldError`.
+        an `attrs.exceptions.PythonTooOldError`.
 
     :param bool repr: Create a ``__repr__`` method with a human readable
         representation of ``attrs`` attributes..
@@ -1373,7 +1373,7 @@ def attrs(
 
         If you assign a value to those attributes (e.g. ``x: int = 42``), that
         value becomes the default value like if it were passed using
-        ``attr.ib(default=42)``.  Passing an instance of `Factory` also
+        ``attr.ib(default=42)``.  Passing an instance of `attrs.Factory` also
         works as expected in most cases (see warning below).
 
         Attributes annotated as `typing.ClassVar`, and attributes that are
@@ -1445,7 +1445,9 @@ def attrs(
         the callable.
 
         If a list of callables is passed, they're automatically wrapped in an
-        `attr.setters.pipe`.
+        `attrs.setters.pipe`.
+    :type on_setattr: `callable`, or a list of callables, or `None`, or
+        `attrs.setters.NO_OP`
 
     :param Optional[callable] field_transformer:
         A function that is called with the original class object and all
@@ -1456,7 +1458,7 @@ def attrs(
     :param bool match_args:
         If `True` (default), set ``__match_args__`` on the class to support
         `PEP 634 <https://www.python.org/dev/peps/pep-0634/>`_ (Structural
-        Pattern Matching). It is a tuple of all positional-only ``__init__``
+        Pattern Matching). It is a tuple of all non-keyword-only ``__init__``
         parameter names on Python 3.10 and later. Ignored on older Python
         versions.
 
@@ -1678,6 +1680,8 @@ def _make_hash(cls, attrs, frozen, cache_hash):
 
     unique_filename = _generate_unique_filename(cls, "hash")
     type_hash = hash(unique_filename)
+    # If eq is custom generated, we need to include the functions in globs
+    globs = {}
 
     hash_def = "def __hash__(self"
     hash_func = "hash(("
@@ -1712,7 +1716,14 @@ def _make_hash(cls, attrs, frozen, cache_hash):
         )
 
         for a in attrs:
-            method_lines.append(indent + "        self.%s," % a.name)
+            if a.eq_key:
+                cmp_name = "_%s_key" % (a.name,)
+                globs[cmp_name] = a.eq_key
+                method_lines.append(
+                    indent + "        %s(self.%s)," % (cmp_name, a.name)
+                )
+            else:
+                method_lines.append(indent + "        self.%s," % a.name)
 
         method_lines.append(indent + "    " + closing_braces)
 
@@ -1732,7 +1743,7 @@ def _make_hash(cls, attrs, frozen, cache_hash):
         append_hash_computation_lines("return ", tab)
 
     script = "\n".join(method_lines)
-    return _make_method("__hash__", script, unique_filename)
+    return _make_method("__hash__", script, unique_filename, globs)
 
 
 def _add_hash(cls, attrs):
@@ -1886,7 +1897,7 @@ def _add_eq(cls, attrs=None):
 if HAS_F_STRINGS:
 
     def _make_repr(attrs, ns, cls):
-        unique_filename = "repr"
+        unique_filename = _generate_unique_filename(cls, "repr")
         # Figure out which attributes to include, and which function to use to
         # format them. The a.repr value can be either bool or a custom
         # callable.
@@ -2037,7 +2048,7 @@ def fields(cls):
     :raise attr.exceptions.NotAnAttrsClassError: If *cls* is not an ``attrs``
         class.
 
-    :rtype: tuple (with name accessors) of `attr.Attribute`
+    :rtype: tuple (with name accessors) of `attrs.Attribute`
 
     ..  versionchanged:: 16.2.0 Returned tuple allows accessing the fields
         by name.
@@ -2064,7 +2075,7 @@ def fields_dict(cls):
         class.
 
     :rtype: an ordered dict where keys are attribute names and values are
-        `attr.Attribute`\\ s. This will be a `dict` if it's
+        `attrs.Attribute`\\ s. This will be a `dict` if it's
         naturally ordered like on Python 3.6+ or an
         :class:`~collections.OrderedDict` otherwise.
 
@@ -2157,7 +2168,6 @@ def _make_init(
         cache_hash,
         base_attr_map,
         is_exc,
-        needs_cached_setattr,
         has_cls_on_setattr,
         attrs_init,
     )
@@ -2170,7 +2180,7 @@ def _make_init(
     if needs_cached_setattr:
         # Save the lookup overhead in __init__ if we need to circumvent
         # setattr hooks.
-        globs["_cached_setattr"] = _obj_setattr
+        globs["_setattr"] = _obj_setattr
 
     init = _make_method(
         "__attrs_init__" if attrs_init else "__init__",
@@ -2187,7 +2197,7 @@ def _setattr(attr_name, value_var, has_on_setattr):
     """
     Use the cached object.setattr to set *attr_name* to *value_var*.
     """
-    return "_setattr('%s', %s)" % (attr_name, value_var)
+    return "_setattr(self, '%s', %s)" % (attr_name, value_var)
 
 
 def _setattr_with_converter(attr_name, value_var, has_on_setattr):
@@ -2195,7 +2205,7 @@ def _setattr_with_converter(attr_name, value_var, has_on_setattr):
     Use the cached object.setattr to set *attr_name* to *value_var*, but run
     its converter first.
     """
-    return "_setattr('%s', %s(%s))" % (
+    return "_setattr(self, '%s', %s(%s))" % (
         attr_name,
         _init_converter_pat % (attr_name,),
         value_var,
@@ -2294,7 +2304,6 @@ def _attrs_to_init_script(
     cache_hash,
     base_attr_map,
     is_exc,
-    needs_cached_setattr,
     has_cls_on_setattr,
     attrs_init,
 ):
@@ -2309,14 +2318,6 @@ def _attrs_to_init_script(
     lines = []
     if pre_init:
         lines.append("self.__attrs_pre_init__()")
-
-    if needs_cached_setattr:
-        lines.append(
-            # Circumvent the __setattr__ descriptor to save one lookup per
-            # assignment.
-            # Note _setattr will be used again below if cache_hash is True
-            "_setattr = _cached_setattr.__get__(self, self.__class__)"
-        )
 
     if frozen is True:
         if slots is True:
@@ -2533,7 +2534,7 @@ def _attrs_to_init_script(
     if post_init:
         lines.append("self.__attrs_post_init__()")
 
-    # because this is set only after __attrs_post_init is called, a crash
+    # because this is set only after __attrs_post_init__ is called, a crash
     # will result if post-init tries to access the hash code.  This seemed
     # preferable to setting this beforehand, in which case alteration to
     # field values during post-init combined with post-init accessing the
@@ -2542,7 +2543,7 @@ def _attrs_to_init_script(
         if frozen:
             if slots:
                 # if frozen and slots, then _setattr defined above
-                init_hash_cache = "_setattr('%s', %s)"
+                init_hash_cache = "_setattr(self, '%s', %s)"
             else:
                 # if frozen and not slots, then _inst_dict defined above
                 init_hash_cache = "_inst_dict['%s'] = %s"
@@ -2951,7 +2952,7 @@ class Factory(object):
     """
     Stores a factory callable.
 
-    If passed as the default value to `attr.ib`, the factory is used to
+    If passed as the default value to `attrs.field`, the factory is used to
     generate a new value.
 
     :param callable factory: A callable that takes either none or exactly one

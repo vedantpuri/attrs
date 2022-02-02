@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+
 import codecs
 import os
 import platform
@@ -48,7 +50,7 @@ EXTRAS_REQUIRE = {
     "docs": ["furo", "sphinx", "zope.interface", "sphinx-notfound-page"],
     "tests_no_zope": [
         # For regression test to ensure cloudpickle compat doesn't break.
-        "cloudpickle",
+        'cloudpickle; python_implementation == "CPython"',
         # 5.0 introduced toml; parallel was broken until 5.0.2
         "coverage[toml]>=5.0.2",
         "hypothesis",
@@ -97,12 +99,16 @@ def find_meta(meta):
     raise RuntimeError("Unable to find __{meta}__ string.".format(meta=meta))
 
 
+LOGO = """
+.. image:: https://www.attrs.org/en/stable/_static/attrs_logo.png
+   :alt: attrs logo
+   :align: center
+"""  # noqa
+
 VERSION = find_meta("version")
 URL = find_meta("url")
 LONG = (
-    "======================================\n"
-    "``attrs``: Classes Without Boilerplate\n"
-    "======================================\n"
+    LOGO
     + read("README.rst").split(".. teaser-begin")[1]
     + "\n\n"
     + "Release Information\n"
